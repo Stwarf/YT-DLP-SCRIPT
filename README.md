@@ -1,11 +1,11 @@
 # YT-DLP-BASH/Python-SCRIPT
 
 Required to be installed before running:
-yt-dlp
-ffmpeg
-mkvmerge
-faster_whisper(int8) for macOS Compatability
-python3.11 or newer
+* yt-dlp
+* ffmpeg
+* mkvmerge
+* faster_whisper(int8) for macOS Compatability
+* python3.11 or newer
 
 Description:
 Simply a Bash script to download YT videos at best audio/video quality that utilizes Python, yt-dlp, ffmpeg, mkvmerge and faster-whisper AI to generate subtitles and embed them to an mkv formatted video. 
