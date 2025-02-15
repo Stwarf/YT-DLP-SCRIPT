@@ -1,6 +1,6 @@
 # YT-DLP-BASH/Python-SCRIPT
 
-Required to be installed before running
+Required to be installed before running:
 yt-dlp
 ffmpeg
 mkvmerge
