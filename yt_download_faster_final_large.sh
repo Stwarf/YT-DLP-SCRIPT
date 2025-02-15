@@ -2,7 +2,7 @@
 
 # Set directories
 VENV_DIR="$HOME/whisper-env"
-TMP_DIR="$HOME/Documents/Scripts/tmp"
+TMP_DIR="$(mktemp -d)"
 OUTPUT_DIR="$HOME/Downloads"
 MODEL_DIR="$HOME/whisper-env/models"
 
