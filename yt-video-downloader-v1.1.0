@@ -1,10 +1,41 @@
+
 #!/bin/bash
+
+# Check if Homebrew is installed
+if ! command -v brew &> /dev/null; then
+    echo "❌ Homebrew is not installed. Please install Homebrew from https://brew.sh/ before continuing."
+    exit 1
+fi
+
+# Check if Python 3.8+ is installed
+PYTHON_VERSION=$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:3])))')
+PYTHON_MAJOR=$(echo "$PYTHON_VERSION" | cut -d. -f1)
+PYTHON_MINOR=$(echo "$PYTHON_VERSION" | cut -d. -f2)
+
+if [ "$PYTHON_MAJOR" -lt 3 ] || { [ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 8 ]; }; then
+    echo "❌ Python 3.8 or higher is required. You have version $PYTHON_VERSION"
+    echo "Please install a newer version of Python using Homebrew:"
+    echo "  brew install python"
+    exit 1
+fi
 
 # Set directories
 VENV_DIR="$HOME/whisper-env"
 TMP_DIR="$(mktemp -d)"
 OUTPUT_DIR="$HOME/Downloads"
 MODEL_DIR="$HOME/whisper-env/models"
+
+# Use manually exported cookies from Web Browser.
+# Make sure to export your cookies (e.g., using a browser extension)
+# and save them as "$HOME/cookies.txt".
+COOKIES_OPTION="--cookies $HOME/cookies.txt"
+
+# Check for cookies file
+if [ ! -f "$HOME/cookies.txt" ]; then
+    echo "❌ Cookies file not found at $HOME/cookies.txt."
+    echo "Please export your Arc cookies and save them to this file."
+    exit 1
+fi
 
 # Ensure temp and output directories exist
 mkdir -p "$TMP_DIR"
@@ -17,7 +48,7 @@ activate_venv() {
 }
 
 # Check if we are inside the "whisper-env" virtual environment
-if [[ -z "$VIRTUAL_ENV" || "$(basename $VIRTUAL_ENV)" != "whisper-env" ]]; then
+if [[ -z "$VIRTUAL_ENV" || "$(basename "$VIRTUAL_ENV")" != "whisper-env" ]]; then
     echo "🔍 Not inside the 'whisper-env' virtual environment."
 
     # If the virtual environment does not exist, create it in the home directory
@@ -58,7 +89,7 @@ fi
 read -p "Enter the YouTube video URL: " VIDEO_URL
 
 # Get the original YouTube title, remove extra spaces and trim it
-VIDEO_TITLE=$(yt-dlp --get-filename -o "%(title)s" "$VIDEO_URL" | sed 's/[^a-zA-Z0-9 ._-]/ /g' | tr -s ' ' | xargs)
+VIDEO_TITLE=$(yt-dlp $COOKIES_OPTION --get-filename -o "%(title)s" "$VIDEO_URL" | sed 's/[^a-zA-Z0-9 ._-]/ /g' | tr -s ' ' | xargs)
 
 # Define file paths
 VIDEO_FILE="$TMP_DIR/${VIDEO_TITLE}.mkv"
@@ -66,7 +97,7 @@ SUBTITLE_FILE="$TMP_DIR/${VIDEO_TITLE}.srt"
 FINAL_OUTPUT="$OUTPUT_DIR/${VIDEO_TITLE}.mkv"  # No "_final" in filename
 
 echo "🎥 Downloading best quality video and audio..."
-yt-dlp -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best" --merge-output-format mkv -o "$VIDEO_FILE" "$VIDEO_URL"
+yt-dlp $COOKIES_OPTION -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best" --merge-output-format mkv -o "$VIDEO_FILE" "$VIDEO_URL"
 
 # Ensure video file exists
 if [ ! -f "$VIDEO_FILE" ]; then
@@ -74,26 +105,14 @@ if [ ! -f "$VIDEO_FILE" ]; then
     exit 1
 fi
 
-# Download best quality audio for Whisper AI
-echo "🎵 Downloading best quality audio for Faster Whisper..."
-AUDIO_FILE="$TMP_DIR/${VIDEO_TITLE}.m4a"
-yt-dlp -f "bestaudio[ext=m4a]/bestaudio" -o "$AUDIO_FILE" "$VIDEO_URL"
-
-# Ensure audio file exists
-if [ ! -f "$AUDIO_FILE" ]; then
-    echo "❌ Error: No valid audio file found for Faster Whisper! Check if yt-dlp downloaded an audio file."
-    exit 1
-else
-    echo "✅ Found audio file: $AUDIO_FILE"
-fi
-
 # Download subtitles (if available)
 echo "📥 Checking for manually uploaded subtitles..."
-yt-dlp --write-subs --skip-download -o "$TMP_DIR/${VIDEO_TITLE}.%(ext)s" "$VIDEO_URL"
+yt-dlp $COOKIES_OPTION --write-subs --skip-download -o "$TMP_DIR/${VIDEO_TITLE}.%(ext)s" "$VIDEO_URL"
 
 # Detect any English subtitle variant
 SUBTITLE_VTT=$(find "$TMP_DIR" -type f -iname "*en*.vtt" | head -n 1)
 SUBTITLE_SRT=$(find "$TMP_DIR" -type f -iname "*.srt" | head -n 1)
+AUDIO_FILE="$TMP_DIR/${VIDEO_TITLE}.m4a"
 
 # Convert VTT to SRT if needed
 if [ -n "$SUBTITLE_VTT" ]; then
@@ -107,8 +126,18 @@ elif [ -n "$SUBTITLE_SRT" ]; then
 else
     echo "⚠️ No manually uploaded subtitles found. Generating new ones with Faster Whisper..."
 
-# Generate subtitles using Faster Whisper with real-time status updates
-python3 - <<EOF
+    echo "🎵 Downloading best quality audio for Faster Whisper..."
+    yt-dlp $COOKIES_OPTION -f "bestaudio/best" --extract-audio --audio-format m4a -o "$AUDIO_FILE" "$VIDEO_URL"
+    
+    if [ ! -f "$AUDIO_FILE" ]; then
+        echo "❌ Error: No valid audio file found for Faster Whisper! Check if yt-dlp downloaded an audio file."
+        exit 1
+    else
+        echo "✅ Found audio file: $AUDIO_FILE"
+    fi
+
+    # Generate subtitles using Faster Whisper with real-time status updates
+    python3 - <<EOF
 import os
 import sys
 from faster_whisper import WhisperModel
