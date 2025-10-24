@@ -45,7 +45,7 @@ This script downloads a YouTube video, checks for manually uploaded subtitles, a
 
 3. **Run the script:**
     ```sh
-    ./yt-video-downloader-v1.0.0.sh
+    ./yt-video-downloader-v1.1.0.sh
     ```
 
 4. Paste your desired YouTube URL when prompted.
@@ -59,6 +59,8 @@ Final `.mkv` with embedded subtitles is saved to:
 
 ## ⚠️ Notes
 
+- Copy URL from the share button on YT webpage for use in terminal/script. Using URL from address bar seems to not work
+- You must watch YT video first so that extracted cookies from your web browser are updated with the cookies of you actually watching the video for the yt-dlp to be able to download the video
 - cookies.txt must be saved in root of home directory because that's where the script looks for cookies file.
 - If no manually uploaded subtitles are found, the script transcribes audio using Faster Whisper.
 - It uses the macOS system temp directory (`/var/folders/...`) for temporary operations.
