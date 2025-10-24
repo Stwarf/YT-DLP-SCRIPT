@@ -1,4 +1,4 @@
-# 🎬 yt-dlp Automation Script For YouTube Video Download With Subtitle Embedder Using Faster-Whisper (macOS)
+# 🎬 yt-dlp Automation Script For YouTube Video Download With Subtitle Embedder Using Faster-Whisper (macOS)(Apple Silicon Compatible)
 
 This script downloads a YouTube video, checks for manually uploaded subtitles, and if not found, generates them using [Faster Whisper](https://github.com/guillaumekln/faster-whisper). It then embeds the subtitles into the final MKV file.
 
